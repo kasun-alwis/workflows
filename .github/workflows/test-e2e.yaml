@@ -1,0 +1,38 @@
+name: e2e tests component
+
+env:
+  # 7 GiB by default on GitHub, setting to 6 GiB
+  # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+  NODE_OPTIONS: --max-old-space-size=6144
+
+on:
+  workflow_call:
+    inputs:
+      TIMEOUT:
+        required: false
+        type: number
+        default: 10
+    secrets:
+      NPM_TOKEN:
+        required: false
+
+jobs:
+  test-e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.TIMEOUT }}
+    env:
+      npm_token: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Setup npm user
+        if: ${{ env.npm_token != '' }}
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
+
+      - run: npm ci
+      - run: npm run test:e2e
